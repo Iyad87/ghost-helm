@@ -7,9 +7,9 @@ variables:
 
 stages:
   - deploy-staging
-  - deploy-prod
+#  - deploy-prod
   - undeploy-staging
-  - undeploy-prod
+#  - undeploy-prod
 
 #########################################
 ## Deploy common
@@ -44,18 +44,18 @@ deploy-staging:
 ########################################
 # Deploy Ghost in prod
 ########################################
-deploy-prod:
-  stage: deploy-prod
-  image: alpine/k8s:1.16.15
-  when: manual
-  only:
-    refs:
-      - master
-  script:
-    - *common-deploy-script
-  environment:
-    ##TODO:: Update the name
-    name: prod-eks-KsVthwt8
+#deploy-prod:
+#  stage: deploy-prod
+#  image: alpine/k8s:1.16.15
+#  when: manual
+#  only:
+#    refs:
+#      - master
+#  script:
+#    - *common-deploy-script
+#  environment:
+#    ##TODO:: Update the name
+#    name: prod-eks-KsVthwt8
 
 ########################################
 # Un-deploy Ghost in staging
@@ -75,15 +75,15 @@ undeploy-staging:
 ########################################
 # Un-deploy Ghost in prod
 ########################################
-undeploy-prod:
-  stage: undeploy-prod
-  image: alpine/k8s:1.16.15
-  when: manual
-  only:
-    refs:
-      - master
-  script:
-    - helm uninstall my-release
-  environment:
-    ##TODO:: Update the name
-    name: prod-eks-KsVthwt8
+#undeploy-prod:
+#  stage: undeploy-prod
+#  image: alpine/k8s:1.16.15
+#  when: manual
+#  only:
+#    refs:
+#      - master
+#  script:
+#    - helm uninstall my-release
+#  environment:
+#    ##TODO:: Update the name
+#    name: prod-eks-KsVthwt8
