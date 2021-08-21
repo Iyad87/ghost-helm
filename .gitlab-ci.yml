@@ -35,7 +35,7 @@ deploy-staging:
   when: manual
   only:
     refs:
-      - master
+      - main
   script:
     - *common-deploy-script
   environment:
@@ -66,7 +66,7 @@ undeploy-staging:
   when: manual
   only:
     refs:
-      - master
+      - main
   script:
     - helm uninstall my-release
   environment:
