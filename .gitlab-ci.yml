@@ -39,7 +39,7 @@ deploy-staging:
   script:
     - *common-deploy-script
   environment:
-    name: staging-eks-KsVthwt8
+    name: staging-eks
 
 ########################################
 # Deploy Ghost in prod
@@ -70,7 +70,7 @@ undeploy-staging:
   script:
     - helm uninstall my-release
   environment:
-    name: staging-eks-KsVthwt8
+    name: staging-eks
 
 ########################################
 # Un-deploy Ghost in prod
