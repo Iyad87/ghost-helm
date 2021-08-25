@@ -453,8 +453,8 @@ ingress:
   ##       ...
   ##       -----END CERTIFICATE-----
   ##
-  secrets:
-    - ghost-tls
+#  secrets:
+#    - ghost-tls
 
 ## @section Persistence Parameters
 
