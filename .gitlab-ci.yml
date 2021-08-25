@@ -17,14 +17,14 @@ stages:
 #
 .common-deploy-script: &common-deploy-script |
   helm repo add bitnami https://charts.bitnami.com/bitnami
-  helm install my-release bitnami/ghost
+  helm install -f $CI_PROJECT_DIR/config/values.yaml ${ENV} bitnami/ghost
   sleep 10
-  export APP_HOST=$(kubectl get svc --namespace $KUBE_NAMESPACE my-release-ghost --template "{{ range (index .status.loadBalancer.ingress 0) }}{{ . }}{{ end }}")
-  export GHOST_PASSWORD=$(kubectl get secret --namespace $KUBE_NAMESPACE my-release-ghost -o jsonpath="{.data.ghost-password}" | base64 -d)
-  export MARIADB_ROOT_PASSWORD=$(kubectl get secret --namespace $KUBE_NAMESPACE my-release-mariadb -o jsonpath="{.data.mariadb-root-password}" | base64 -d)
-  export MARIADB_PASSWORD=$(kubectl get secret --namespace $KUBE_NAMESPACE my-release-mariadb -o jsonpath="{.data.mariadb-password}" | base64 -d)
-  helm upgrade my-release bitnami/ghost --set service.type=LoadBalancer,ghostHost=$APP_HOST,ghostPassword=$GHOST_PASSWORD,mariadb.auth.rootPassword=$MARIADB_ROOT_PASSWORD,mariadb.auth.password=$MARIADB_PASSWORD
-  kubectl rollout status deployment my-release-ghost
+  export APP_HOST=$(kubectl get ingress --namespace $KUBE_NAMESPACE | grep ghost | awk '{print $3}')
+  export GHOST_PASSWORD=$(kubectl get secret --namespace $KUBE_NAMESPACE ${ENV}-ghost -o jsonpath="{.data.ghost-password}" | base64 -d)
+  export MARIADB_ROOT_PASSWORD=$(kubectl get secret --namespace $KUBE_NAMESPACE ${ENV}-mariadb -o jsonpath="{.data.mariadb-root-password}" | base64 -d)
+  export MARIADB_PASSWORD=$(kubectl get secret --namespace $KUBE_NAMESPACE ${ENV}-mariadb -o jsonpath="{.data.mariadb-password}" | base64 -d)
+  helm upgrade ${ENV} bitnami/ghost --set service.type=LoadBalancer,ghostHost=$APP_HOST,ghostPassword=$GHOST_PASSWORD,mariadb.auth.rootPassword=$MARIADB_ROOT_PASSWORD,mariadb.auth.password=$MARIADB_PASSWORD
+  kubectl rollout status deployment ${ENV}-ghost
 
 ########################################
 # Deploy Ghost in staging
@@ -33,6 +33,8 @@ deploy-staging:
   stage: deploy-staging
   image: alpine/k8s:1.16.15
   when: manual
+  variables:
+    ENV: staging
   only:
     refs:
       - main
@@ -64,11 +66,13 @@ undeploy-staging:
   stage: undeploy-staging
   image: alpine/k8s:1.16.15
   when: manual
+  variables:
+    ENV: staging
   only:
     refs:
       - main
   script:
-    - helm uninstall my-release
+    - helm uninstall ${ENV}
   environment:
     name: staging-eks
 
