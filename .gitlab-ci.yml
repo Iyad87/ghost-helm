@@ -16,6 +16,7 @@ stages:
 #########################################
 #
 .common-deploy-script: &common-deploy-script |
+  kubectl apply -f $CI_PROJECT_DIR/config/ingress-${ENV}.yaml
   helm repo add bitnami https://charts.bitnami.com/bitnami
   helm install -f $CI_PROJECT_DIR/config/values.yaml ${ENV} bitnami/ghost
   sleep 10

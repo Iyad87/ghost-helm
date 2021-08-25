@@ -327,7 +327,7 @@ customReadinessProbe: {}
 service:
   ## @param service.type Ghost service type
   ##
-  type: ClusterIP
+  type: LoadBalancer
   ## @param service.port Ghost service HTTP port
   ##
   port: 80
@@ -374,7 +374,7 @@ service:
 ingress:
   ## @param ingress.enabled Enable ingress record generation for Ghost
   ##
-  enabled: true
+  enabled: false
   ## @param ingress.pathType Ingress path type
   ##
   pathType: ImplementationSpecific
@@ -402,7 +402,7 @@ ingress:
   ##   - Relay on cert-manager to create it by setting `ingress.certManager=true`
   ##   - Relay on Helm to create self-signed certificates by setting `ingress.selfSigned=true`
   ##
-  tls: true
+  tls: false
   ## @param ingress.certManager Add the corresponding annotations for cert-manager integration
   ##
   certManager: false
