@@ -5,10 +5,18 @@ The repo will help you to deploy a website using Ghost into an AWS Managed Kuber
 There are other repos which will help in automating the deployment of the whole infrastructure used for the website
 - [eks-tf](https://gitlab.com/nord-cloud-ghost/eks-tf) - Terraform(IaC) code base to deploy EKS cluster 
 - [eks-addons](https://gitlab.com/nord-cloud-ghost/eks-addons) - Helm chart code base to deploy addons on EKS cluster for monitoring and visualising Ghost app and its environments
-#TODO:: Fix me with url
-- [ghost-infra]() - Terraform code base to deploy infra related to Ghost application
+- [ghost-infra](https://gitlab.com/nord-cloud-ghost/ghost-infra) - Terraform code base to deploy infra related to Ghost application
+
+##Assumptions
+- Terraform - v0.14.8
+- Kubectl
+- AWS Account
+- AWC CLI Configured with right credentials
 
 ## Infrastructure
+
+INSERT IMAGE for ARCHITECTURE
+
 To support development efforts three different environments (Dev, Staging, Prod) will be created in AWS and each environment mainly consists of the following:
 
 - VPC (with private and public subnet) - Networking
@@ -37,6 +45,40 @@ Each account has two different groups
 - security - Read access given, as they need visibility into the platform and its operations
 
 All the users in devops team should be added to the group devops and all the users in security should be added to security group 
+
+## Deploying Infrastructure
+
+### EKS
+
+Multi-AZ
+
+### IAM ROLES
+
+### EKS Addons
+
+### List of EKS Addons
+
+After creating the EKS cluster, there are few addons which are installed for monitoring, visualising and debugging the EKS cluster and Ghost application in general for Devops and Security team
+
+List of tools installed
+
+- Prometheus
+- Grafana
+- Loki
+- Cert-manager
+- Nginx Ingress Controller
+- Atlantis
+- Velero
+
+All the add-ons are installed into namespace: ```gitlab-managed-apps```
+
+A Gitlab pipeline is setup to automate their deployment into EKS cluster.
+
+Refer to the repo [eks-addons](https://gitlab.com/nord-cloud-ghost/eks-addons) for more information.
+
+
+
+
 
 ## Deploying Website
 
@@ -74,27 +116,14 @@ After successful installation of Ghost app on EKS cluster, following information
     $(kubectl get secret my-release-ghost -o jsonpath="{.data.ghost-password}" | base64 --decode)
     ```
 
-## List of EKS Addons
+## Deploying Serverless function
 
-After creating the EKS cluster, there are few addons which are installed for monitoring, visualising and debugging the EKS cluster and Ghost application in general for Devops and Security team
+### Ghost flush (Serverless Function)
+There is serverless function which allows you to delete all the posts in Ghost.
 
-List of tools installed
+A lambda function is at your disposal which can be used to delete all the posts
 
-- Prometheus
-- Grafana
-- Loki 
-- Cert-manager
-- Nginx Ingress Controller
-- Atlantis
-- Velero
-
-All the add-ons are installed into namespace: ```gitlab-managed-apps```
-
-A Gitlab pipeline is setup to automate their deployment into EKS cluster.
-
-Refer to the repo [eks-addons](https://gitlab.com/nord-cloud-ghost/eks-addons) for more information.
-
-## Disaster Recovery for EKS
+## Backup and Disaster Recovery for EKS
 
 Ghost will be deployed using AWS managed kubernetes cluster(EKS). 
 Should there be a disaster, and the whole kubernetes cluster goes unavailable, 
@@ -137,10 +166,7 @@ kubectl patch backupstoragelocation <STORAGE LOCATION NAME> \
    --patch '{"spec":{"accessMode":"ReadWrite"}}'
 ```
 
-## Ghost flush (Serverless Function)
-There is serverless function which allows you to delete all the posts in Ghost.
 
-A lambda function is at your disposal which can be used to delete all the posts
 
 ## Ghost API
 
@@ -156,3 +182,6 @@ http://aaab6820f4fe340508fe7bf5cfa6a5de-1082779787.us-east-1.elb.amazonaws.com/g
 curl -b ghost-cookie.txt \
 -H "Content-Type: application/json" \
 http://aaab6820f4fe340508fe7bf5cfa6a5de-1082779787.us-east-1.elb.amazonaws.com/ghost/api/canary/admin/db/
+
+
+

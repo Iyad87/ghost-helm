@@ -327,7 +327,7 @@ customReadinessProbe: {}
 service:
   ## @param service.type Ghost service type
   ##
-  type: LoadBalancer
+  type: ClusterIP
   ## @param service.port Ghost service HTTP port
   ##
   port: 80
@@ -554,10 +554,10 @@ mariadb:
   ##      https://github.com/bitnami/bitnami-docker-mariadb/blob/master/README.md#creating-a-database-on-first-run
   ##      https://github.com/bitnami/bitnami-docker-mariadb/blob/master/README.md#creating-a-database-user-on-first-run
   auth:
-    rootPassword: ""
+    rootPassword: "83Bt5aoYWJ"
     database: bitnami_ghost
     username: bn_ghost
-    password: ""
+    password: "s26MYIfCPr"
     existingSecret: ""
   ## MariaDB Primary configuration
   ##

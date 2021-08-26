@@ -2,10 +2,10 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   annotations:
-    # add an annotation indicating the issuer to use.
     kubernetes.io/ingress.class: nginx
     kubernetes.io/tls-acme: "true"
     cert-manager.io/cluster-issuer: "acme-cluster-issuer-dns01"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
   name: ghost
 spec:
   rules:
@@ -22,4 +22,4 @@ spec:
   tls:
     - hosts:
         - ghost.dev.goprix.xyz
-      secretName: ghost-tls # < cert-manager will store the created certificate in this secret.
+      secretName: ghost-tls
