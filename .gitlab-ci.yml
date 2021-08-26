@@ -7,9 +7,7 @@ variables:
 
 before_script:
   - apk add openssl
-  - kubectl create secret generic secret-provider --from-literal=ghostPassword=$(openssl rand -base64 12) \
-    --from-literal=rootPassword=$(openssl rand -base64 12) \
-    --from-literal=password=$(openssl rand -base64 12)
+  - kubectl create secret generic secret-provider --from-literal=ghostPassword=$(openssl rand -base64 12) --from-literal=rootPassword=$(openssl rand -base64 12) --from-literal=password=$(openssl rand -base64 12)
 
 stages:
   - deploy-dev
