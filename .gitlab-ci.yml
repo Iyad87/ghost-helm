@@ -5,6 +5,12 @@ services:
 variables:
   GIT_SUBMODULE_STRATEGY: normal
 
+before_script:
+  - apk add openssl
+  - kubectl create secret generic secret-provider --from-literal=ghostPassword=$(openssl rand -base64 12) \
+    --from-literal=rootPassword=$(openssl rand -base64 12) \
+    --from-literal=password=$(openssl rand -base64 12)
+
 stages:
   - deploy-dev
   - undeploy-dev
@@ -20,13 +26,13 @@ stages:
 .common-deploy-script: &common-deploy-script |
   kubectl apply -f $CI_PROJECT_DIR/config/ingress-${ENV}.yaml
   helm repo add bitnami https://charts.bitnami.com/bitnami
-  helm install -f $CI_PROJECT_DIR/config/values.yaml ${ENV} bitnami/ghost
+  export GHOST_PASSWORD=$(kubectl get secrets/secret-provider --template={{.data.ghostPassword}} | base64 -d)
+  export MARIADB_ROOT_PASSWORD=$(kubectl get secrets/secret-provider --template={{.data.rootPassword}} | base64 -d)
+  export MARIADB_PASSWORD=$(kubectl get secrets/secret-provider --template={{.data.password}} | base64 -d)
+  helm install -f $CI_PROJECT_DIR/config/values.yaml ${ENV} bitnami/ghost --set mariadb.auth.rootPassword=$MARIADB_ROOT_PASSWORD,mariadb.auth.password=$MARIADB_PASSWORD,ghostPassword=$GHOST_PASSWORD
   sleep 10
   kubectl rollout status deployment ${ENV}-ghost
 #  export APP_HOST=$(kubectl get ingress --namespace $KUBE_NAMESPACE | grep ghost | awk '{print $3}')
-#  export GHOST_PASSWORD=$(kubectl get secret --namespace $KUBE_NAMESPACE ${ENV}-ghost -o jsonpath="{.data.ghost-password}" | base64 -d)
-#  export MARIADB_ROOT_PASSWORD=$(kubectl get secret --namespace $KUBE_NAMESPACE ${ENV}-mariadb -o jsonpath="{.data.mariadb-root-password}" | base64 -d)
-#  export MARIADB_PASSWORD=$(kubectl get secret --namespace $KUBE_NAMESPACE ${ENV}-mariadb -o jsonpath="{.data.mariadb-password}" | base64 -d)
 #  helm upgrade -f $CI_PROJECT_DIR/config/values.yaml ${ENV} bitnami/ghost --set mariadb.auth.rootPassword=$MARIADB_ROOT_PASSWORD,mariadb.auth.password=$MARIADB_PASSWORD
 
 ########################################
@@ -86,6 +92,7 @@ undeploy-staging:
     ENV: staging
   script:
     - kubectl delete -f $CI_PROJECT_DIR/config/ingress-${ENV}.yaml
+    - kubectl delete secret secret-provider
     - helm uninstall ${ENV}
     - kubectl delete pvc data-staging-mariadb-0
   environment:
@@ -104,6 +111,7 @@ undeploy-prod:
     ENV: prod
   script:
     - kubectl delete -f $CI_PROJECT_DIR/config/ingress-${ENV}.yaml
+    - kubectl delete secret secret-provider
     - helm uninstall ${ENV}
     - kubectl delete pvc data-prod-mariadb-0
   environment:
@@ -122,6 +130,7 @@ undeploy-dev:
     ENV: dev
   script:
     - kubectl delete -f $CI_PROJECT_DIR/config/ingress-${ENV}.yaml
+    - kubectl delete secret secret-provider
     - helm uninstall ${ENV}
     - kubectl delete pvc data-dev-mariadb-0
   environment:
