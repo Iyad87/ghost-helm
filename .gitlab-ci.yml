@@ -6,10 +6,12 @@ variables:
   GIT_SUBMODULE_STRATEGY: normal
 
 stages:
+  - deploy-dev
+  - undeploy-dev
   - deploy-staging
-#  - deploy-prod
   - undeploy-staging
-#  - undeploy-prod
+  - deploy-prod
+  - undeploy-prod
 
 #########################################
 ## Deploy common
@@ -19,6 +21,12 @@ stages:
   kubectl apply -f $CI_PROJECT_DIR/config/ingress-${ENV}.yaml
   helm repo add bitnami https://charts.bitnami.com/bitnami
   helm install -f $CI_PROJECT_DIR/config/values.yaml ${ENV} bitnami/ghost
+  sleep 10
+#  export APP_HOST=$(kubectl get ingress --namespace $KUBE_NAMESPACE | grep ghost | awk '{print $3}')
+#  export GHOST_PASSWORD=$(kubectl get secret --namespace $KUBE_NAMESPACE ${ENV}-ghost -o jsonpath="{.data.ghost-password}" | base64 -d)
+#  export MARIADB_ROOT_PASSWORD=$(kubectl get secret --namespace $KUBE_NAMESPACE ${ENV}-mariadb -o jsonpath="{.data.mariadb-root-password}" | base64 -d)
+#  export MARIADB_PASSWORD=$(kubectl get secret --namespace $KUBE_NAMESPACE ${ENV}-mariadb -o jsonpath="{.data.mariadb-password}" | base64 -d)
+#  helm upgrade -f $CI_PROJECT_DIR/config/values.yaml ${ENV} bitnami/ghost --set mariadb.auth.rootPassword=$MARIADB_ROOT_PASSWORD,mariadb.auth.password=$MARIADB_PASSWORD
   kubectl rollout status deployment ${ENV}-ghost
 
 ########################################
@@ -27,62 +35,99 @@ stages:
 deploy-staging:
   stage: deploy-staging
   image: alpine/k8s:1.16.15
-  when: manual
   variables:
     ENV: staging
-  only:
-    refs:
-      - main
   script:
     - *common-deploy-script
   environment:
     name: staging-eks
+  rules:
+    - if: '$CI_COMMIT_BRANCH =~ /^(main|production)$/'
+      when: manual
 
 ########################################
 # Deploy Ghost in prod
 ########################################
-#deploy-prod:
-#  stage: deploy-prod
-#  image: alpine/k8s:1.16.15
-#  when: manual
-#  only:
-#    refs:
-#      - master
-#  script:
-#    - *common-deploy-script
-#  environment:
-#    ##TODO:: Update the name
-#    name: prod-eks-KsVthwt8
+deploy-prod:
+  stage: deploy-prod
+  image: alpine/k8s:1.16.15
+  variables:
+    ENV: staging
+  script:
+    - *common-deploy-script
+  environment:
+    name: prod-eks
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "production"'
+      when: manual
 
 ########################################
-# Un-deploy Ghost in staging
+# Deploy Ghost in Dev
+########################################
+deploy-dev:
+  stage: deploy-dev
+  image: alpine/k8s:1.16.15
+  variables:
+    ENV: dev
+  script:
+    - *common-deploy-script
+  environment:
+    name: dev-eks
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "dev"'
+
+########################################
+# Un-deploy Ghost in Staging
 ########################################
 undeploy-staging:
   stage: undeploy-staging
   image: alpine/k8s:1.16.15
-  when: manual
   variables:
     ENV: staging
-  only:
-    refs:
-      - main
   script:
+    - kubectl delete -f $CI_PROJECT_DIR/config/ingress-${ENV}.yaml
     - helm uninstall ${ENV}
+    - kubectl delete pvc data-staging-mariadb-0
   environment:
     name: staging-eks
+  rules:
+    - if: '$CI_COMMIT_BRANCH =~ /^(main|production)$/'
+      when: manual
 
 ########################################
-# Un-deploy Ghost in prod
+# Un-deploy Ghost in Prod
 ########################################
-#undeploy-prod:
-#  stage: undeploy-prod
-#  image: alpine/k8s:1.16.15
-#  when: manual
-#  only:
-#    refs:
-#      - master
-#  script:
-#    - helm uninstall my-release
-#  environment:
-#    ##TODO:: Update the name
-#    name: prod-eks-KsVthwt8
+undeploy-prod:
+  stage: undeploy-prod
+  image: alpine/k8s:1.16.15
+  variables:
+    ENV: prod
+  script:
+    - kubectl delete -f $CI_PROJECT_DIR/config/ingress-${ENV}.yaml
+    - helm uninstall ${ENV}
+    - kubectl delete pvc data-prod-mariadb-0
+  environment:
+    name: prod-eks
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "production"'
+      when: manual
+
+########################################
+# Un-deploy Ghost in Dev
+########################################
+undeploy-dev:
+  stage: undeploy-dev
+  image: alpine/k8s:1.16.15
+  variables:
+    ENV: dev
+  script:
+    - kubectl delete -f $CI_PROJECT_DIR/config/ingress-${ENV}.yaml
+    - helm uninstall ${ENV}
+    - kubectl delete pvc data-dev-mariadb-0
+  environment:
+    ##TODO:: Update the name
+    name: dev-eks
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "dev"'
+      when: manual
+
