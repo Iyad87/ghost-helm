@@ -7,7 +7,6 @@ variables:
 
 before_script:
   - apk add openssl
-  - kubectl create secret generic secret-provider --from-literal=ghostPassword=$(openssl rand -base64 12) --from-literal=rootPassword=$(openssl rand -base64 12) --from-literal=password=$(openssl rand -base64 12)
 
 stages:
   - deploy-dev
@@ -24,9 +23,9 @@ stages:
 .common-deploy-script: &common-deploy-script |
   kubectl apply -f $CI_PROJECT_DIR/config/ingress-${ENV}.yaml
   helm repo add bitnami https://charts.bitnami.com/bitnami
-  export GHOST_PASSWORD=$(kubectl get secrets/secret-provider --template={{.data.ghostPassword}} | base64 -d)
-  export MARIADB_ROOT_PASSWORD=$(kubectl get secrets/secret-provider --template={{.data.rootPassword}} | base64 -d)
-  export MARIADB_PASSWORD=$(kubectl get secrets/secret-provider --template={{.data.password}} | base64 -d)
+  export GHOST_PASSWORD=$(openssl rand -base64 12)
+  export MARIADB_ROOT_PASSWORD=$(openssl rand -base64 12)
+  export MARIADB_PASSWORD=$(openssl rand -base64 12)
   helm install -f $CI_PROJECT_DIR/config/values.yaml ${ENV} bitnami/ghost --set mariadb.auth.rootPassword=$MARIADB_ROOT_PASSWORD,mariadb.auth.password=$MARIADB_PASSWORD,ghostPassword=$GHOST_PASSWORD
   sleep 10
   kubectl rollout status deployment ${ENV}-ghost
@@ -90,7 +89,6 @@ undeploy-staging:
     ENV: staging
   script:
     - kubectl delete -f $CI_PROJECT_DIR/config/ingress-${ENV}.yaml
-    - kubectl delete secret secret-provider
     - helm uninstall ${ENV}
     - kubectl delete pvc data-staging-mariadb-0
   environment:
@@ -109,7 +107,6 @@ undeploy-prod:
     ENV: prod
   script:
     - kubectl delete -f $CI_PROJECT_DIR/config/ingress-${ENV}.yaml
-    - kubectl delete secret secret-provider
     - helm uninstall ${ENV}
     - kubectl delete pvc data-prod-mariadb-0
   environment:
@@ -128,7 +125,6 @@ undeploy-dev:
     ENV: dev
   script:
     - kubectl delete -f $CI_PROJECT_DIR/config/ingress-${ENV}.yaml
-    - kubectl delete secret secret-provider
     - helm uninstall ${ENV}
     - kubectl delete pvc data-dev-mariadb-0
   environment:

@@ -7,15 +7,27 @@ There are other repos which will help in automating the deployment of the whole 
 - [eks-addons](https://gitlab.com/nord-cloud-ghost/eks-addons) - Helm chart code base to deploy addons on EKS cluster for monitoring and visualising Ghost app and its environments
 - [ghost-infra](https://gitlab.com/nord-cloud-ghost/ghost-infra) - Terraform code base to deploy infra related to Ghost application
 
-##Assumptions
+##Assumptions:
+
+- Customer is in AWS region: us-east-1
+- User/Dev has an AWS account
+- User/Dev has prior knowledge of:
+   - Terraform
+   - AWS CLI
+   - Using EKS cluster
+
+##Prerequisites:
+To Setup the entire project following tools are needed:
+
 - Terraform - v0.14.8
 - Kubectl
-- AWS Account
-- AWC CLI Configured with right credentials
+- AWS CLI Configured with right credentials
+- S3 bucket to store terraform state file
+- A DynamoDB table to store the lock information for terraform  
 
 ## Infrastructure
 
-INSERT IMAGE for ARCHITECTURE
+![Architecture](images/architecture.png)
 
 To support development efforts three different environments (Dev, Staging, Prod) will be created in AWS and each environment mainly consists of the following:
 
@@ -26,14 +38,115 @@ To support development efforts three different environments (Dev, Staging, Prod)
 - Gitlab - For storing code and CI/CD
 - S3 buckets - For storing terraform state files and creating backups for eks cluster
 - IAM - For user and access management
+- DynamoDB - For storing terraform state Lock information
+- Prometheus
+- Grafana
+- Loki
+- cloud trail
+- Velero
+- Atlantis
 
 All the environments will be managed by three different accounts within AWS for separation of concerns.
 
 All EKS clusters will be integrated in the gitlab repos, so it can be used with CI/CD. Below are the cluster names for each environment:
 
+3. Dev     - ```dev-eks```
 1. Staging - ```staging-eks```
 2. Prod    - ```prod-eks```
-3. Dev     - ```dev-eks```
+
+## Deployment
+### Deploying Infrastructure
+
+1. Configure AWS cli with a IAM user which programmatic and admin access
+
+2. Website will be hosted in an EKS cluster, so go to repo: - [eks-tf](https://gitlab.com/nord-cloud-ghost/eks-tf) and follow instructions to
+   deploy the following infrastructure using terraform:
+   - EKS cluster
+   - Security groups for creating firewalls for the EKS cluster
+   - VPC
+   - IAM Roles using OIDC provider to provide necessary access to Velero, Cert-manager and Atlantis
+   - Deloyment of Cert-manager on EKS cluster using helm chart
+   - Deloyment of Nginx Ingress controller on EKS cluster using helm chart
+   - Route53 CNAME record to route Outside traffic to Nginx Ingress controller
+   - Deploy a service account and clusterrolebindings to provide admin access to gitlab
+   
+   Once the EKS cluster is successfully created use the below command to add kubeconfig to your context:
+   ```shell
+   aws eks --region us-east-1 update-kubeconfig --name staging-eks
+   ```
+
+   
+3. Integrate/Add EKS cluster to gitlab. 
+
+   As the solution is spread across different repos within a group in gitlab, 
+   we will add EKS cluster as a group level cluster following the instructions 
+   from gitlab documentation [here](https://docs.gitlab.com/ee/user/project/clusters/add_existing_cluster.html#how-to-add-an-existing-cluster).
+   Following settings are recommended:
+   - Fetch API URL using AWS Console
+   - Fetch CA certificate again from AWS console and decode it before using it
+   ```shell
+   echo <COPY-ENCODED-CA-CERTIFICATE> | base64 --decode
+   ```
+   - A service account which has admin access is already created while setting up the cluster. So you can skip the creation of service account and clusterrolebindings and 
+     directly fetch token using the following command:
+   ```shell
+   kubectl -n kube-system describe secret $(kubectl -n kube-system get secret | grep gitlab | awk '{print $1}')
+   ```
+   - DO NOT DISABLE RBAC settings
+   - Let gitlab manage your eks cluster
+   
+4. After integrating the cluster, use the repo [eks-addons](https://gitlab.com/nord-cloud-ghost/eks-addons), to deploy EKS addons which help to monitor the cluster and website hosted by ghost.
+   [eks-addons](https://gitlab.com/nord-cloud-ghost/eks-addons) repo has a gitlab pipeline which can be used to deploy the addons in each environment. Further instruction can be looked in the repo.
+   
+Following above steps should successfully help in deploying infrastructure for hosting website using Ghost
+
+
+### Deploying Website
+
+Ghost is chosen for website creation, so a helm chart will be used to deploy ghost onto EKS cluster.
+
+Installation is automated to different environments using gitlab-ci pipeline in this repo. A branch strategy is used to enable or disable a particular job, for example ```dev```
+related jobs can only be triggered in ```dev``` tagged branches, similarly, production related jobs can be enabled in ```production``` tagged branches
+
+There are six different jobs which can be used to install/uninstall Ghost on eks cluster. So trigger the pipeline to deploy ghost onto an environment
+
+#### List of Jobs
+
+All the jobs in the pipeline are manual except ```deploy-dev``` and use both kubectl and helm to install and uninstall ghost on different eks clusters
+
+1. ```deploy-dev```         - to install ghost to dev eks cluster
+2. ```undeploy-dev```       - to uninstall ghost on dev eks cluster
+3. ```deploy-staging```     - to install ghost to staging eks cluster
+4. ```undeploy-staging```   - to uninstall ghost on staging eks cluster
+5. ```deploy-prod```        - to install ghost to prod eks cluster
+6. ```undeploy-prod```      - to uninstall ghost on prod eks cluster
+
+## Accessing Ghost
+
+After successful installation of Ghost app on EKS cluster, following information can be used to access the website on internet:
+
+1. Get the Ghost URL by running:
+
+   - Blog URL  : http://ghost.prod.goprix.xyz/
+   - Admin URL : http://ghost.prod.goprix.xyz/ghost
+
+2. Get your Ghost login credentials by using:
+
+   - Email: ```gopikrishna@goprix.xyz```
+   - To extract password:
+    ```shell
+    $(kubectl get secret staging-ghost -o jsonpath="{.data.ghost-password}" | base64 --decode)
+    ```
+
+## Deploying Serverless function
+
+As per customer needs a serverless function is built using AWS lambda which is deployed using terraform in the repo: [ghost-infra](https://gitlab.com/nord-cloud-ghost/ghost-infra)
+
+Currently, there is no way to trigger the function except for AWS Console.
+
+AWS Lambda function contains python code and it is uses [Ghost API](https://ghost.org/docs/admin-api/) functionality 
+
+Note: Password needs to be reset before running the lambda function
 
 ## Identity and Access Management
 
@@ -44,85 +157,26 @@ Each account has two different groups
 - devops - Admin access given, as they are tasked with maintaining and debugging the state of the environment
 - security - Read access given, as they need visibility into the platform and its operations
 
-All the users in devops team should be added to the group devops and all the users in security should be added to security group 
+All the users in devops team should be added to the group devops and all the users in security should be added to security group
 
-## Deploying Infrastructure
+### Security
 
-### EKS
+As security is considered to be one of the pillar in this whole architecture, following steps are taken to make the infrastructure secure:
 
-Multi-AZ
+1. Credentials related to Ghost app are created dynamically during the pipeline and then assigned in the app using helm. Following command is used for dynamic assignment of credentials:
+   ```shell 
+   openssl rand -base64 12
+   ```
+2. An IAM assume role is created for all the EKS addons which interact with AWS services such as Velero, Cert-manager and Atlantis. As per the AWS [documentation](https://docs.aws.amazon.com/eks/latest/userguide/iam-roles-for-service-accounts.html), this is considered to be good design practice
 
-### IAM ROLES
+3. EKS Cluster created is private cluster
 
-### EKS Addons
-
-### List of EKS Addons
-
-After creating the EKS cluster, there are few addons which are installed for monitoring, visualising and debugging the EKS cluster and Ghost application in general for Devops and Security team
-
-List of tools installed
-
-- Prometheus
-- Grafana
-- Loki
-- Cert-manager
-- Nginx Ingress Controller
-- Atlantis
-- Velero
-
-All the add-ons are installed into namespace: ```gitlab-managed-apps```
-
-A Gitlab pipeline is setup to automate their deployment into EKS cluster.
-
-Refer to the repo [eks-addons](https://gitlab.com/nord-cloud-ghost/eks-addons) for more information.
-
-
-
-
-
-## Deploying Website
-
-Ghost is chosen for website creation, so a helm chart will be used to deploy ghost onto EKS cluster.
-
-Installation will be automated to different environments using gitlab-ci pipeline in this repo.
-
-There are six different jobs which can be used to install/uninstall Ghost on eks cluster.
-
-## List of Jobs
-
-All the jobs in the pipeline are manual and use both kubctl and helm to install and uninstall ghost on different eks clusters
-
-1. Deploy Staging    - to install ghost to staging eks cluster
-2. Un-Deploy Staging - to uninstall ghost on staging eks cluster
-3. Deploy Prod       - to install ghost to prod eks cluster
-4. Un-Deploy Prod    - to uninstall ghost on prod eks cluster
-5. Deploy Dev        - to install ghost to dev eks cluster
-6. Un-Deploy Dev     - to uninstall ghost on dev eks cluster
-
-## Accessing Ghost
-
-After successful installation of Ghost app on EKS cluster, following information can be used to access the application on internet:
-
-1. Get the Ghost URL by running:
+4. All the applications which are exposed to internet using a FQDN are SSL enabled. 
+   Cert-manager adds certificates and certificate issuers as resource types in cluster, and simplifies the process of obtaining, renewing and using those certificates for the applications below:
+   - Ghost
+   - Grafana
+   - Atlantis
    
-   - Blog URL  : http://ghost.staging.goprix.xyz/
-   - Admin URL : http://ghost.staging.goprix.xyz/ghost
-    
-2. Get your Ghost login credentials by using:
-
-    - Email: ```gopikrishna@goprix.xyz```
-    - To extract password:
-    ```shell
-    $(kubectl get secret my-release-ghost -o jsonpath="{.data.ghost-password}" | base64 --decode)
-    ```
-
-## Deploying Serverless function
-
-### Ghost flush (Serverless Function)
-There is serverless function which allows you to delete all the posts in Ghost.
-
-A lambda function is at your disposal which can be used to delete all the posts
-
 ## Backup and Disaster Recovery for EKS
 
 Ghost will be deployed using AWS managed kubernetes cluster(EKS). 
@@ -166,22 +220,15 @@ kubectl patch backupstoragelocation <STORAGE LOCATION NAME> \
    --patch '{"spec":{"accessMode":"ReadWrite"}}'
 ```
 
+## Appendix
 
+1. Screenshots of Website on Ghost application
+   ![Architecture](images/ghost.png)
 
-## Ghost API
+2. Screenshots of Ghost App monitoring on Grafana
 
-It’s possible to create and manage your content using the Ghost Admin API. 
-Ghost Admin, uses the admin API - which means that everything Ghost Admin can do is also possible with the API, and a whole lot more!
+   ![Grafana](images/grafana-prom.png)
 
-## Creating a Session using Ghost API
+3. Screenshots of logs monitoring on Grafana using Loki
 
-curl -c ghost-cookie.txt -d username=<Username> -d password=<password> \
-http://aaab6820f4fe340508fe7bf5cfa6a5de-1082779787.us-east-1.elb.amazonaws.com/ghost/api/canary/admin/session/
-
-## Deleting all posts
-curl -b ghost-cookie.txt \
--H "Content-Type: application/json" \
-http://aaab6820f4fe340508fe7bf5cfa6a5de-1082779787.us-east-1.elb.amazonaws.com/ghost/api/canary/admin/db/
-
-
-
+   ![Grafana](images/loki.png)
