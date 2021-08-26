@@ -22,12 +22,12 @@ stages:
   helm repo add bitnami https://charts.bitnami.com/bitnami
   helm install -f $CI_PROJECT_DIR/config/values.yaml ${ENV} bitnami/ghost
   sleep 10
+  kubectl rollout status deployment ${ENV}-ghost
 #  export APP_HOST=$(kubectl get ingress --namespace $KUBE_NAMESPACE | grep ghost | awk '{print $3}')
 #  export GHOST_PASSWORD=$(kubectl get secret --namespace $KUBE_NAMESPACE ${ENV}-ghost -o jsonpath="{.data.ghost-password}" | base64 -d)
 #  export MARIADB_ROOT_PASSWORD=$(kubectl get secret --namespace $KUBE_NAMESPACE ${ENV}-mariadb -o jsonpath="{.data.mariadb-root-password}" | base64 -d)
 #  export MARIADB_PASSWORD=$(kubectl get secret --namespace $KUBE_NAMESPACE ${ENV}-mariadb -o jsonpath="{.data.mariadb-password}" | base64 -d)
 #  helm upgrade -f $CI_PROJECT_DIR/config/values.yaml ${ENV} bitnami/ghost --set mariadb.auth.rootPassword=$MARIADB_ROOT_PASSWORD,mariadb.auth.password=$MARIADB_PASSWORD
-  kubectl rollout status deployment ${ENV}-ghost
 
 ########################################
 # Deploy Ghost in staging
@@ -125,7 +125,6 @@ undeploy-dev:
     - helm uninstall ${ENV}
     - kubectl delete pvc data-dev-mariadb-0
   environment:
-    ##TODO:: Update the name
     name: dev-eks
   rules:
     - if: '$CI_COMMIT_BRANCH == "dev"'
