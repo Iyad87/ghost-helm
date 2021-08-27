@@ -84,6 +84,7 @@ deploy-dev:
 undeploy-staging:
   stage: undeploy-staging
   image: alpine/k8s:1.16.15
+  before_script: []
   variables:
     ENV: staging
   script:
@@ -102,6 +103,7 @@ undeploy-staging:
 undeploy-prod:
   stage: undeploy-prod
   image: alpine/k8s:1.16.15
+  before_script: []
   variables:
     ENV: prod
   script:
@@ -120,6 +122,7 @@ undeploy-prod:
 undeploy-dev:
   stage: undeploy-dev
   image: alpine/k8s:1.16.15
+  before_script: []
   variables:
     ENV: dev
   script:
