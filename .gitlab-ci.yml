@@ -29,8 +29,7 @@ stages:
   helm install -f $CI_PROJECT_DIR/config/values.yaml ${ENV} bitnami/ghost --set mariadb.auth.rootPassword=$MARIADB_ROOT_PASSWORD,mariadb.auth.password=$MARIADB_PASSWORD,ghostPassword=$GHOST_PASSWORD
   sleep 10
   kubectl rollout status deployment ${ENV}-ghost
-#  export APP_HOST=$(kubectl get ingress --namespace $KUBE_NAMESPACE | grep ghost | awk '{print $3}')
-#  helm upgrade -f $CI_PROJECT_DIR/config/values.yaml ${ENV} bitnami/ghost --set mariadb.auth.rootPassword=$MARIADB_ROOT_PASSWORD,mariadb.auth.password=$MARIADB_PASSWORD
+  kubectl apply -f $CI_PROJECT_DIR/config/hpa-${ENV}.yaml
 
 ########################################
 # Deploy Ghost in staging

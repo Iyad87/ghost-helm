@@ -211,7 +211,10 @@ podLabels: {}
 ## @param podAnnotations Annotations for Ghost pods
 ## ref: https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/
 ##
-podAnnotations: {}
+podAnnotations:
+  prometheus.io/scrape: 'true'
+  prometheus.io/path: '/data/metrics'
+  prometheus.io/port: '80'
 ## @param podAffinityPreset Pod affinity preset. Ignored if `affinity` is set. Allowed values: `soft` or `hard`
 ## ref: https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#inter-pod-affinity-and-anti-affinity
 ##
