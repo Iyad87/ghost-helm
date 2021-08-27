@@ -12,7 +12,7 @@ There are other repos which will help in automating the deployment of the whole 
 - [eks-addons](https://gitlab.com/nord-cloud-ghost/eks-addons) - Helm chart code base to deploy addons on EKS cluster for monitoring and visualising Ghost app and its environments
 - [ghost-infra](https://gitlab.com/nord-cloud-ghost/ghost-infra) - Terraform code base to deploy serverless function related to Ghost application
 
-##Assumptions:
+## Assumptions:
 
 - Customer is in AWS region: ```us-east-1```
 - User/Dev has an AWS account with programmatic access
@@ -132,7 +132,7 @@ related jobs can only be triggered in ```dev``` tagged branches, similarly, prod
 
 There are six different jobs which can be used to install/uninstall Ghost on eks cluster. So trigger the pipeline in gitlab repo to deploy ghost onto an environment
 
-For Reference, click on the play button shown in the picture to deploy ghost on eks cluster:
+For Reference, click on the play button shown in the picture to deploy ghost on eks cluster in staging:
 
 ![Workloads](images/pipeline.png)
 
