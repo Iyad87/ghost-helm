@@ -4,7 +4,7 @@ This is a proof of concept for the customer Drone Shuttles Ltd to launch their w
 The repo will help you to deploy a website using Ghost into an AWS Managed Kubernetes cluster(EKS).
 In this repo we have:
 - gitlab-ci.yaml to deploy ghost application 
-- nginx ingress to expose ghost outside eks cluster
+- nginx ingress kubernetes manifest files to expose ghost outside eks cluster in different environments
 - horizontal pod autoscaler kubernetes manifest file to scale ghost based on different traffic spikes
 
 There are other repos which will help in automating the deployment of the whole infrastructure used for the website
