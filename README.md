@@ -117,8 +117,11 @@ Shows overview of Deployment
    - DO NOT DISABLE RBAC settings
    - Let gitlab manage your eks cluster
    
-4. After integrating the cluster, use the repo [eks-addons](https://gitlab.com/nord-cloud-ghost/eks-addons), to deploy EKS addons which help to monitor the cluster and website hosted by ghost.
-   [Eks-addons](https://gitlab.com/nord-cloud-ghost/eks-addons) repo has a gitlab pipeline which can be used to deploy the addons in each environment. Further instruction can be looked in the repo.
+4. After integrating the EKS cluster in gitlab, add [eks-addons](https://gitlab.com/nord-cloud-ghost/eks-addons) repo as cluster management project. Follow the steps [here](https://docs.gitlab.com/ee/user/clusters/management_project.html#selecting-a-cluster-management-project), to add a gitlab project as cluster management project 
+   
+5. After integrating the EKS cluster to gitlab and adding [eks-addons](https://gitlab.com/nord-cloud-ghost/eks-addons) as cluster management project, deploy EKS addons from the repo [eks-addons](https://gitlab.com/nord-cloud-ghost/eks-addons).
+   It help in monitoring the EKS cluster and website hosted by ghost.
+   [Eks-addons](https://gitlab.com/nord-cloud-ghost/eks-addons) repo has a gitlab pipeline which can be used to deploy the addons in each environment. Further instruction can be looked in the repo
    
 Following above steps should successfully help in deploying infrastructure for hosting website using Ghost
 
