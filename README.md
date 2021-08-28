@@ -234,7 +234,7 @@ Following steps can be followed for disaster recovery:
 To achieve that, a simple EC2 instance which has access to EKS cluster and velero cli installed, then below command can be executed:
 
 ```shell 
-velero schedule create <SCHEDULE NAME> --schedule "0 7 * * *"
+velero schedule create <SCHEDULE NAME> --schedule "0 7 * * *" -n gitlab-managed-apps
 ```
 This creates a Backup object with the name ```<SCHEDULE NAME>-<TIMESTAMP>```. The default backup retention period, expressed as TTL (time to live), is 30 days (720 hours); you can use the --ttl ```<DURATION>``` flag to change this as necessary
 
@@ -250,7 +250,7 @@ kubectl patch backupstoragelocation <STORAGE LOCATION NAME> \
 4. Execute the command below to restore the snapshots
 
 ```shell
-velero restore create --from-backup <SCHEDULE NAME>-<TIMESTAMP>
+velero restore create --from-backup <SCHEDULE NAME>-<TIMESTAMP> -n gitlab-managed-apps
 ```
 
 5. When ready, revert your backup storage location to read-write mode:
